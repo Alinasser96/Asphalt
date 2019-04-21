@@ -50,4 +50,8 @@ dependencies {
     releaseImplementation 'com.readystatesoftware.chuck:library-no-op:1.1.0'
     //MultiDex
     implementation 'com.android.support:multidex:1.0.1'
+    //openalpr
+    implementation 'com.github.SandroMachado:openalpr-android:1.1.2'
+    implementation 'com.google.code.gson:gson:2.5'
+    implementation 'com.squareup.picasso:picasso:2.5.2'
 }

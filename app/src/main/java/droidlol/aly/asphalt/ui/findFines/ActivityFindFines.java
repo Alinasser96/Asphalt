@@ -1,6 +1,7 @@
 package droidlol.aly.asphalt.ui.findFines;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -11,9 +12,11 @@ import android.widget.Toast;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import droidlol.aly.asphalt.R;
 import droidlol.aly.asphalt.pojo.FinesResponse;
 import droidlol.aly.asphalt.pojo.SearchingData;
+import droidlol.aly.asphalt.ui.Main2Activity;
 import io.reactivex.disposables.CompositeDisposable;
 
 public class ActivityFindFines extends AppCompatActivity implements ViewFindFines, View.OnClickListener {
@@ -36,9 +39,12 @@ public class ActivityFindFines extends AppCompatActivity implements ViewFindFine
     EditText etNumber;
     @BindView(R.id.number)
     TextInputLayout number;
+    @BindView(R.id.button2)
+    Button button2;
     private ProgressDialog progressDialog;
     private CompositeDisposable compositeDisposable = new CompositeDisposable();
     private PresenterFindFines presenterFindFines;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +61,8 @@ public class ActivityFindFines extends AppCompatActivity implements ViewFindFine
         presenterFindFines = new PresenterFindFines(compositeDisposable, this);
         presenterFindFines.attachView(this);
         getFines.setOnClickListener(this);
+        button2.setOnClickListener(this);
+
 
     }
 
@@ -90,6 +98,9 @@ public class ActivityFindFines extends AppCompatActivity implements ViewFindFine
         switch (v.getId()) {
             case R.id.get_fines:
                 presenterFindFines.getFines(searchingData);
+                break;
+            case R.id.button2:
+                startActivity(new Intent(this, Main2Activity.class));
         }
     }
 
@@ -115,4 +126,6 @@ public class ActivityFindFines extends AppCompatActivity implements ViewFindFine
             }
         });
     }
+
+
 }
