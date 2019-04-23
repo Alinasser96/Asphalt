@@ -61,4 +61,8 @@ public class FinesResponse {
         this.numbers = numbers;
     }
 
+    public String getPlateData(){
+        return getFirstLetter()+" "+getSecondLetter()+" "+getThirdLetter()+" "+getNumbers();
+    }
+
 }

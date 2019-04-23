@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Asphalt</string>
+    <string name="press_to_get_fines">Press the button to get fines.</string>
+    <string name="plate_data">plate data will appear here</string>
+    <string name="fines_data">your fines will appear here</string>
+    <string name="get_fines">get fines!</string>
+    <string name="your_fines">your fines :%s</string>
 </resources>

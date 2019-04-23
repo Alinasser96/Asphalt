@@ -12,11 +12,12 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,33 +25,34 @@ import android.widget.Toast;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
-import droidlol.aly.asphalt.Property;
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import droidlol.aly.asphalt.R;
 import droidlol.aly.asphalt.pojo.FinesResponse;
-import droidlol.aly.asphalt.ui.findFines.PresenterFindFines;
-import droidlol.aly.asphalt.ui.findFines.ViewFindFines;
+import droidlol.aly.asphalt.util.CommonUtil;
 import io.reactivex.disposables.CompositeDisposable;
 
-public class ActivityFindFines extends AppCompatActivity implements ViewFindFines {
+public class ActivityFindFines extends AppCompatActivity implements ViewFindFines, View.OnClickListener {
 
     private static final int REQUEST_IMAGE = 100;
     private static final int STORAGE = 1;
-    private static File destination;
-    private String ANDROID_DATA_DIR;
-    private TextView resultTextView;
-    private ImageView imageView;
-    private Property<File> propertyPhotoFile = new Property<>();
+    private static File capturedImageFile;
+    @BindView(R.id.imageView)
+    ImageView plateImageView;
+    @BindView(R.id.get_fines_button)
+    Button getFinesButton;
+    @BindView(R.id.fines_textView)
+    TextView resultTextView;
+    @BindView(R.id.plate_data_textView)
+    TextView plateDataTextView;
+
     private Bitmap bitmap;
 
     private ProgressDialog progressDialog;
@@ -61,45 +63,46 @@ public class ActivityFindFines extends AppCompatActivity implements ViewFindFine
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
 
+        //progress dialog, textViews, buttons and presenter initialization
+        init();
+    }
 
+    private void init() {
+
+        //progressDialog initialization
         progressDialog = new ProgressDialog(this);
         progressDialog.setIndeterminate(true);
         progressDialog.setCancelable(false);
         progressDialog.setTitle("wait..");
 
+        //presenter initialization
         presenterFindFines = new PresenterFindFines(compositeDisposable, this);
         presenterFindFines.attachView(this);
-        ANDROID_DATA_DIR = this.getApplicationInfo().dataDir;
 
-        findViewById(R.id.button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                checkPermission();
-            }
-        });
-        resultTextView = (TextView) findViewById(R.id.textView);
-        imageView = (ImageView) findViewById(R.id.imageView);
+        //textViews initialization
+        resultTextView.setText(getString(R.string.press_to_get_fines));
 
-
-        resultTextView.setText("Press the button below to start a request.");
+        //buttons initialization
+        getFinesButton.setOnClickListener(this);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_IMAGE && resultCode == Activity.RESULT_OK) {
-            Log.d("Main", destination+"");
-            Uri uri = Uri.fromFile(destination);
             try {
+                //scale down the photo
+                Uri uri = Uri.fromFile(capturedImageFile);
                 bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+                File scaledDownCapturedImageFile = CommonUtil.scaleDown(capturedImageFile, 300, false, bitmap);
+                //get fines from api
+                presenterFindFines.getFines(scaledDownCapturedImageFile);
+                //set plate img in imageView
+                Picasso.get().load(uri).into(plateImageView);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            Picasso.get().load(uri).into(imageView);
-            propertyPhotoFile.set(destination);
-            scaleDown(propertyPhotoFile.get(), 300, false);
-            presenterFindFines.getFines(scaleDown(propertyPhotoFile.get(), 300, false));
-
         }
 
     }
@@ -111,7 +114,7 @@ public class ActivityFindFines extends AppCompatActivity implements ViewFindFine
         }
         if (!permissions.isEmpty()) {
             Toast.makeText(this, "Storage access needed to manage the picture.", Toast.LENGTH_LONG).show();
-            String[] params = permissions.toArray(new String[permissions.size()]);
+            String[] params = permissions.toArray(new String[0]);
             ActivityCompat.requestPermissions(this, params, STORAGE);
         } else { // We already have permissions, so handle as normal
             takePicture();
@@ -119,7 +122,7 @@ public class ActivityFindFines extends AppCompatActivity implements ViewFindFine
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
             case STORAGE: {
                 Map<String, Integer> perms = new HashMap<>();
@@ -143,11 +146,6 @@ public class ActivityFindFines extends AppCompatActivity implements ViewFindFine
         }
     }
 
-    public String dateToString(Date date, String format) {
-        SimpleDateFormat df = new SimpleDateFormat(format, Locale.getDefault());
-
-        return df.format(date);
-    }
 
     public void takePicture() {
         // Use a folder to store all results
@@ -165,52 +163,20 @@ public class ActivityFindFines extends AppCompatActivity implements ViewFindFine
         }
 
         // Generate the path for the next photo
-        String name = dateToString(new Date(), "yyyy-MM-dd-hh-mm-ss");
-        destination = new File(folder, name + ".jpg");
+        String name = CommonUtil.dateToString(new Date(), "yyyy-MM-dd-hh-mm-ss");
+        capturedImageFile = new File(folder, name + ".jpg");
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(destination));
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(capturedImageFile));
         startActivityForResult(intent, REQUEST_IMAGE);
     }
 
-    public File scaleDown(File file, float maxImageSize,
-                          boolean filter) {
-
-        if (null == bitmap) {
-            return null;
-        }
-
-        float ratio = Math.min(
-                (float) maxImageSize / bitmap.getWidth(),
-                (float) maxImageSize / bitmap.getHeight());
-        int width = Math.round((float) ratio * bitmap.getWidth());
-        int height = Math.round((float) ratio * bitmap.getHeight());
-
-        Bitmap newBitmap = Bitmap.createScaledBitmap(bitmap, width,
-                height, filter);
-
-        try {
-            FileOutputStream fOut = new FileOutputStream(file);
-            newBitmap.compress(Bitmap.CompressFormat.PNG, 100, fOut);
-
-            fOut.flush();
-            fOut.close();
-
-            return file;
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
 
     @Override
     public void onFindFinesSuccess(FinesResponse finesResponse) {
-        resultTextView.setText(finesResponse.getResult());
-        Toast.makeText(this, finesResponse.getResult(), Toast.LENGTH_SHORT).show();
+        resultTextView.setText(CommonUtil.formatStrings(getString(R.string.your_fines), finesResponse.getResult()));
+        plateDataTextView.setText(finesResponse.getPlateData());
     }
 
     @Override
@@ -249,5 +215,15 @@ public class ActivityFindFines extends AppCompatActivity implements ViewFindFine
                 progressDialog.dismiss();
             }
         });
+    }
+
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.get_fines_button:
+                checkPermission();
+                break;
+        }
     }
 }
