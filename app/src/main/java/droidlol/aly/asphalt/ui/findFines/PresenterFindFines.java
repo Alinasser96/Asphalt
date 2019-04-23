@@ -2,6 +2,8 @@ package droidlol.aly.asphalt.ui.findFines;
 
 import android.content.Context;
 
+import java.io.File;
+
 import droidlol.aly.asphalt.pojo.FinesResponse;
 import droidlol.aly.asphalt.pojo.SearchingData;
 import droidlol.aly.asphalt.remote.RxNetworking;
@@ -13,7 +15,7 @@ public class PresenterFindFines extends BasePresenter<ViewFindFines> {
         super(compositeDisposable, context);
     }
 
-    public void getFines(SearchingData searchingData){
+    public void getFines(File searchingData){
         RxNetworking.findFines(searchingData)
                 .doOnSubscribe(disposable -> getView().setLoading(150))
                 .doFinally(() -> getView().setLoaded(150))
