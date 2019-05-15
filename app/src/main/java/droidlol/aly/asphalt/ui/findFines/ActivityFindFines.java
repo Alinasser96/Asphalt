@@ -132,7 +132,7 @@ public class ActivityFindFines extends AppCompatActivity implements ViewFindFine
                 for (int i = 0; i < permissions.length; i++)
                     perms.put(permissions[i], grantResults[i]);
                 // Check for WRITE_EXTERNAL_STORAGE
-                Boolean storage = perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+                boolean storage = perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
                 if (storage) {
                     // permission was granted, yay!
                     takePicture();
